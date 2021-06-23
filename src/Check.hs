@@ -1,8 +1,9 @@
-module Check where
+module Check (check, errorPretty) where
 import Relude
 import Parse
 import qualified Data.HashMap.Strict as HM
 import Data.List (lookup)
+import qualified Data.Text as T
 
 data TypeError
   = NotDefined Ident
@@ -10,10 +11,36 @@ data TypeError
   | TopLevelTwice
   | NotComparable QType
   | NotPtr QType
-  | NotStruct QType
   | NotFunction QType
   | WrongArity [QType] [QType]
-  | DoesntHaveField (HashMap Ident QType) Ident
+  | DoesntHaveField QType Ident
+
+errorPretty :: (Ident, TypeError) -> String
+errorPretty (i, t) = "Error in `" <> T.unpack i <> "`: " <> typeErrorPretty t
+
+typeErrorPretty :: TypeError -> String
+typeErrorPretty (NotDefined v)        = "Not in scope: " <> T.unpack v
+typeErrorPretty (WrongType l r)       =
+  "Type mismatch\n\tgot: " <> typePretty l <> "\n\texpected: " <> typePretty r
+typeErrorPretty TopLevelTwice         = "Multiple definitions"
+typeErrorPretty (NotComparable t)     = "Not a comparable type: " <> typePretty t
+typeErrorPretty (NotPtr t)            = "Not a pointer type: " <> typePretty t
+typeErrorPretty (NotFunction t)       = "Not a callable type: " <> typePretty t
+typeErrorPretty (DoesntHaveField t f) =
+  "Doesn't have field `" <> T.unpack f <> "`: " <> typePretty t
+typeErrorPretty (WrongArity l r)      =
+  "Wrong arity (got " <> show (length l) <> ", expected " <> show (length r)
+  <> ")\n\tgot: " <> intercalate ", " (fmap show l)
+  <> ")\n\texpected: " <> intercalate ", " (fmap show r)
+
+typePretty :: QType -> String
+typePretty (TStruct fs) =
+  "{" <> intercalate ", " ((\(f, t) -> T.unpack f <> ": " <> typePretty t) <$> HM.toList fs) <> "}"
+typePretty (TFn as r)   =
+  "(" <> intercalate ", " (fmap typePretty as) <> ") -> " <> typePretty r
+typePretty (TPtr t)     = "*" <> typePretty t
+typePretty TInt         = "int"
+typePretty TBool        = "bool"
 
 type M = ReaderT (Ident, QType) (Either (Ident, TypeError))
 
@@ -91,12 +118,12 @@ binopType Set = Assign
 
 typesMatch :: OpType -> QType -> QType -> M QType
 typesMatch Num l r = do l =! TInt; r =! TInt; pure TInt
-typesMatch Equ l r = (l =! r) $> TBool
+typesMatch Equ l r = (r =! l) $> TBool
 typesMatch Ord l r = do
   unless (l == TInt || l == TBool) $ raise $ NotComparable l
   l =! r
   pure TBool
-typesMatch Assign l r = (l =! r) $> r
+typesMatch Assign l r = (r =! l) $> r
 
 checkUnop :: Unop -> QType -> M QType
 checkUnop Ref    t = pure (TPtr t)
@@ -127,16 +154,16 @@ expr (EStruct fs) = traverse expr fs
   <&> EStruct . fmap fst &&& TStruct . fmap snd
 
 doField :: Ident -> QExpr -> QType -> M (QExpr, QType)
-doField f e (TStruct fs) = case HM.lookup f fs of
-  Nothing           -> raise $ DoesntHaveField fs f
+doField f e t@(TStruct fs) = case HM.lookup f fs of
+  Nothing           -> raise $ DoesntHaveField t f
   Just ft           -> pure (e, ft)
 doField f e (TPtr t) = doField f (EUnop Deref e) t
-doField _ _ t        = raise $ NotStruct t
+doField f _ t        = raise $ DoesntHaveField t f
 
 doFunction :: QExpr -> QType -> [QType] -> M (QExpr, QType)
 doFunction e (TFn as r) xs
-  | length as == length xs = raise $ WrongArity as xs
-  | otherwise              = zipWithM_ (=!) as xs $> (e, r)
+  | length as == length xs = raise $ WrongArity xs as
+  | otherwise              = zipWithM_ (=!) xs as $> (e, r)
 doFunction e (TPtr t)   xs = doFunction (EUnop Deref e) t xs
 doFunction _ t          _  = raise $ NotFunction t
 

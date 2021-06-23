@@ -1,13 +1,5 @@
-main(): int {
-	return true;
-	while x >= 4 {
-		foo(x).field = blah = 4;
-	}
-}
-
-foo(x: int): int = 1 == x * 3 + 4 ^ -x;
-
-bar(x: int): int {
-	y: int = x;
+main(): bool { return true; }
+foo: bool = true;
+add(x: int, y: int): int {
 	return x + y;
 }
