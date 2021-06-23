@@ -1,3 +1,4 @@
+// -*- mode: prog -*-
 main(): bool { return true; }
 
 foo: bool = true;

@@ -5,7 +5,7 @@ module Parse
   ) where
 import Relude hiding (many)
 import Text.Megaparsec
-import Text.Megaparsec.Char hiding (char, string)
+import qualified Text.Megaparsec.Char as Char
 import Data.Char
 import Relude.Unsafe (read)
 import qualified Data.Text as T
@@ -23,7 +23,7 @@ type Parser = Parsec QParseError Text
 type Ident = Text
 
 toplevel :: Parser [QDecl]
-toplevel = many decl
+toplevel = space *> many decl <* eof
 
 ident :: Parser Ident
 ident = do
@@ -223,10 +223,14 @@ varDecl ctor rhs =
   ctor <$> try (ident <* char ':') <*> type_ <* char '=' <*> rhs <* char ';'
 
 char :: Char -> Parser ()
-char c = single c *> space
+char c = Char.char c *> space
 
 string :: Text -> Parser ()
-string s = chunk s *> space
+string s = Char.string s *> space
+
+space :: Parser ()
+space = Char.space
+  *> (Char.string "//" *> takeWhile1P Nothing (/= '\n') *> space <|> Char.space)
 
 parens, braces :: Parser a -> Parser a
 parens = between (char '(') (char ')')
