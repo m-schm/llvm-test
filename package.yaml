@@ -23,6 +23,7 @@ dependencies:
 - base
 - relude
 - megaparsec
+- unordered-containers
 - text
 
 default-extensions:
