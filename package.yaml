@@ -29,6 +29,7 @@ dependencies:
 default-extensions:
 - NoImplicitPrelude
 - OverloadedStrings
+- DeriveFunctor
 
 executables:
   llvm-test:

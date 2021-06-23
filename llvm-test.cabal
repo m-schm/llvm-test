@@ -28,12 +28,14 @@ executable llvm-test
   other-modules:
       Check
       Parse
+      Returns
       Paths_llvm_test
   hs-source-dirs:
       src
   default-extensions:
       NoImplicitPrelude
       OverloadedStrings
+      DeriveFunctor
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
   build-depends:
       base

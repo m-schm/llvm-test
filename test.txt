@@ -23,6 +23,13 @@ getAge(x: {name: void, age: int}): int {
 	return x.age;
 }
 
-incrementAge(x: *{name: void, age: int}): int {
+incrementAge(x: *{name: void, age: int}) {
 	x.age = x.age + 1;
 }
+
+test(): int {
+	return 3;
+	return 3;
+	return 3;
+}
+
