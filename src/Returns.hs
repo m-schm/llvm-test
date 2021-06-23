@@ -33,7 +33,7 @@ decl (DFn n as r blk) = case block blk of
   Yes blk'           -> pure $ DFn n as r blk'
   No blk' | isVoid r -> pure $ DFn n as r blk'
   No _               -> Left n
-decl d@DVar{} = pure d
+decl d@(DVar _ _ _)   = pure d
 
 isVoid :: QType -> Bool
 isVoid (TStruct fs) = HM.null fs
