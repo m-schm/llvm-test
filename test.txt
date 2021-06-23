@@ -1,5 +1,23 @@
 main(): bool { return true; }
+
 foo: bool = true;
+
 add(x: int, y: int): int {
 	return x + y;
+}
+
+factorial(x: int): int {
+	y: int = 1;
+	while x > 0 {
+		y = y * x;
+	}
+	return y;
+}
+
+getAge(x: {name: void, age: int}): int {
+	return x.age;
+}
+
+incrementAge(x: *{name: void, age: int}): int {
+	x.age = x.age + 1;
 }

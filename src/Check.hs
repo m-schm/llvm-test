@@ -12,6 +12,7 @@ data TypeError
   | NotComparable QType
   | NotPtr QType
   | NotFunction QType
+  | NotLvalue
   | WrongArity [QType] [QType]
   | DoesntHaveField QType Ident
 
@@ -26,6 +27,7 @@ typeErrorPretty TopLevelTwice         = "Multiple definitions"
 typeErrorPretty (NotComparable t)     = "Not a comparable type: " <> typePretty t
 typeErrorPretty (NotPtr t)            = "Not a pointer type: " <> typePretty t
 typeErrorPretty (NotFunction t)       = "Not a callable type: " <> typePretty t
+typeErrorPretty NotLvalue             = "Attempt to assign to non-assignable expression"
 typeErrorPretty (DoesntHaveField t f) =
   "Doesn't have field `" <> T.unpack f <> "`: " <> typePretty t
 typeErrorPretty (WrongArity l r)      =
@@ -168,7 +170,10 @@ doFunction e (TPtr t)   xs = doFunction (EUnop Deref e) t xs
 doFunction _ t          _  = raise $ NotFunction t
 
 assertLvalue :: QExpr -> M ()
-assertLvalue = error "not implemented"
+assertLvalue (EUnop Deref _) = pure ()
+assertLvalue (EVar _)        = pure ()
+assertLvalue (EField _ _)    = pure ()
+assertLvalue _               = raise NotLvalue
 
 (=!) :: QType -> QType -> M ()
 t =! u
