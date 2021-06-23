@@ -33,7 +33,7 @@ typeErrorPretty (DoesntHaveField t f) =
 typeErrorPretty (WrongArity l r)      =
   "Wrong arity (got " <> show (length l) <> ", expected " <> show (length r)
   <> ")\n\tgot: " <> intercalate ", " (fmap show l)
-  <> ")\n\texpected: " <> intercalate ", " (fmap show r)
+  <> "\n\texpected: " <> intercalate ", " (fmap show r)
 
 typePretty :: QType -> String
 typePretty (TStruct fs) =
@@ -87,6 +87,11 @@ stmt (SDoWhile blk cond) = do
   lift $ ct =! TBool
   env <- get
   flip SDoWhile c <$> lift (block env blk)
+stmt (SIf cond then_ else_) = do
+  (c, ct) <- expr' cond
+  lift $ ct =! TBool
+  env <- get
+  SIf c <$> lift (block env then_) <*> lift (block env else_)
 stmt (SVar name ty body) = do
   (b, bt) <- expr' body
   lift $ bt =! ty
@@ -164,7 +169,7 @@ doField f _ t        = raise $ DoesntHaveField t f
 
 doFunction :: QExpr -> QType -> [QType] -> M (QExpr, QType)
 doFunction e (TFn as r) xs
-  | length as == length xs = raise $ WrongArity xs as
+  | length as /= length xs = raise $ WrongArity xs as
   | otherwise              = zipWithM_ (=!) xs as $> (e, r)
 doFunction e (TPtr t)   xs = doFunction (EUnop Deref e) t xs
 doFunction _ t          _  = raise $ NotFunction t

@@ -10,6 +10,7 @@ import Data.Char
 import Relude.Unsafe (read)
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as HM
+import Relude.Extra (notMember)
 
 newtype QParseError = DuplicateKeys Ident
   deriving (Show, Eq, Ord)
@@ -27,13 +28,15 @@ toplevel = many decl
 ident :: Parser Ident
 ident = do
   i <- takeWhile1P (Just "identifier") isAlpha
-  guard $ i `notElem`
-    ["while", "do", "return", "int", "bool", "false", "true", "void"]
+  guard $ i `notMember` keywords
   space
   pure i
 
+keywords :: Set Ident
+keywords = fromList ["while", "do", "return", "int", "bool", "false", "true", "void", "if", "else"]
+
 kw :: Ident -> Parser ()
-kw s = chunk s *> notFollowedBy (satisfy isAlpha) *> space
+kw s = try (chunk s *> notFollowedBy (satisfy isAlpha)) *> space
 
 data QType
   = TStruct (HashMap Ident QType)
@@ -177,15 +180,17 @@ data QStmt
   = SExpr QExpr
   | SWhile QExpr [QStmt]
   | SDoWhile [QStmt] QExpr
+  | SIf QExpr [QStmt] [QStmt]
   | SVar Ident QType QExpr
   | SReturn QExpr
   deriving Show
 
 stmt :: Parser QStmt
 stmt = choice
-  [ SWhile   <$  kw "while" <*> expr <*> block
-  , SDoWhile <$  kw "do" <*> block <* kw "while" <*> expr <* char ';'
-  , SReturn  <$  kw "return" <*> expr <* char ';'
+  [ SWhile   <$ kw "while" <*> expr <*> block
+  , SDoWhile <$ kw "do" <*> block <* kw "while" <*> expr <* char ';'
+  , SIf      <$ kw "if" <*> expr <*> block <*> option [] (kw "else" *> block)
+  , SReturn  <$ kw "return" <*> expr <* char ';'
   , varDecl SVar expr
   , SExpr    <$> expr <* char ';'
   ]
