@@ -189,11 +189,15 @@ stmt :: Parser QStmt
 stmt = choice
   [ SWhile   <$ kw "while" <*> expr <*> block
   , SDoWhile <$ kw "do" <*> block <* kw "while" <*> expr <* char ';'
-  , SIf      <$ kw "if" <*> expr <*> block <*> option [] (kw "else" *> block)
+  , if_
   , SReturn  <$ kw "return" <*> expr <* char ';'
   , varDecl SVar expr
   , SExpr    <$> expr <* char ';'
-  ]
+  ] where
+    if_ = SIf <$ kw "if"
+      <*> expr
+      <*> block
+      <*> option [] (kw "else" *> block <|> pure <$> if_)
 
 block :: Parser [QStmt]
 block = braces (many stmt) <* optional (char ';')
