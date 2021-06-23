@@ -1,4 +1,7 @@
-module Parse (toplevel) where
+module Parse
+  ( toplevel
+  , Ident, QDecl(..), QType(..), Lvalue(..), QExpr(..), QLit(..)
+  ) where
 import Relude hiding (many)
 import Text.Megaparsec
 import Text.Megaparsec.Char hiding (char, string)
@@ -25,21 +28,21 @@ kw :: Ident -> Parser ()
 kw s = chunk s *> notFollowedBy (satisfy isAlpha) *> space
 
 data QType
-  = TStruct [(Ident, QType)]
+  = TStruct (HashMap Ident QType)
   | TFn [QType] QType
   | TPtr QType
   | TInt
   | TBool
-  deriving Show
+  deriving (Show, Eq)
 
 type_ :: Parser QType
 type_ =
       TInt <$ string "int"
   <|> TBool <$ string "bool"
-  <|> TStruct [] <$ string "void"
+  <|> TStruct mempty <$ string "void"
   <|> TPtr <$ char '*' <*> type_
   <|> TFn <$> parens (type_ `sepEndBy` char ',') <* string "->" <*> type_
-  <|> TStruct <$> braces (field `sepEndBy` char ',')
+  <|> TStruct <$> braces (fmap fromList $ field `sepEndBy` char ',')
   where field = (,) <$> ident <* char ':' <*> type_
 
 data Lvalue
@@ -192,7 +195,7 @@ decl :: Parser QDecl
 decl = varDecl DVar lit
    <|> DFn  <$> ident
             <*> parens (arg `sepEndBy` char ',')
-            <*> option (TStruct []) (char ':' *> type_)
+            <*> option (TStruct mempty) (char ':' *> type_)
             <*> body
   where
     arg = (,) <$> ident <* char ':' <*> type_
