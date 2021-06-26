@@ -6,6 +6,7 @@ import Text.Megaparsec (parse, errorBundlePretty)
 import qualified Data.Text.IO as T
 import qualified Check
 import qualified Returns
+import qualified Rename
 
 main :: IO ()
 main = do
@@ -17,4 +18,4 @@ main = do
       Left err -> putStrLn $ Check.errorPretty err
       Right ast' -> case Returns.toplevel ast' of
         Left n -> T.putStrLn $ "Not all code paths return: " <> n
-        Right ast'' -> traverse_ print ast''
+        Right ast'' -> traverse_ print $ Rename.rename ast''
