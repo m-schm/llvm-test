@@ -25,11 +25,13 @@ dependencies:
 - megaparsec
 - unordered-containers
 - text
+- llvm-hs-pure
+- mtl
 
 default-extensions:
+- DeriveFunctor
 - NoImplicitPrelude
 - OverloadedStrings
-- DeriveFunctor
 
 executables:
   llvm-test:

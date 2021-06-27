@@ -27,19 +27,24 @@ executable llvm-test
   main-is: Main.hs
   other-modules:
       Check
+      Codegen
+      Orphans
       Parse
+      Rename
       Returns
       Paths_llvm_test
   hs-source-dirs:
       src
   default-extensions:
+      DeriveFunctor
       NoImplicitPrelude
       OverloadedStrings
-      DeriveFunctor
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
   build-depends:
       base
+    , llvm-hs-pure
     , megaparsec
+    , mtl
     , relude
     , text
     , unordered-containers
